@@ -21,7 +21,7 @@ const std::vector<Comp> cases {
 }
 
 TEST(OID, Simple) {
-  ASSERT_EQ(sizeof(cdump::OID), 20);
+  ASSERT_EQ(sizeof(cdump::OID), 20u);
 
   for (auto& comp : cases) {
     // Test hashing itself.
