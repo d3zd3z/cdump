@@ -22,8 +22,16 @@ struct OID {
   // Generate the hex version of the uid.
   std::string to_hex();
 
+  // Adjust the current hash by 1, incrementing it (with carry).
+  OID& operator--() { tweak(-1, 255); return *this; }
+  OID& operator++() { tweak(1, 0); return *this; }
+
  private:
   uint8_t raw[hash_length];
+
+  // Adjust the current value by 'adjust', which must be either '1' or
+  // '-1'.  The stop value indicates the wraparound.
+  void tweak(int adjust, int stop);
 };
 
 }

@@ -47,4 +47,20 @@ std::string OID::to_hex() {
   return buf.str();
 }
 
+void OID::tweak(int adjust, int stop) {
+  unsigned pos = hash_length - 1;
+  for (;;) {
+    uint8_t tmp = raw[pos] + adjust;
+    raw[pos] = tmp;
+    if (tmp == stop) {
+      if (pos == 0)
+	// Full wraparound.
+	break;
+      else
+	--pos;
+    } else
+      break;
+  }
+}
+
 }

@@ -33,3 +33,52 @@ TEST(OID, Simple) {
     ASSERT_EQ(oid2.to_hex(), comp.expect);
   }
 }
+
+namespace {
+// Test the tweaking case.  If the amount is positive, adjust up,
+// otherwise adjust down.
+void test_tweaking(const std::string input,
+		   const std::string expect,
+		   int amount)
+{
+  cdump::OID oid(input);
+  while (amount > 0) {
+    ++oid;
+    --amount;
+  }
+  while (amount < 0) {
+    --oid;
+    ++amount;
+  }
+  ASSERT_EQ(oid.to_hex(), expect);
+}
+
+}
+
+TEST(OID, Tweak) {
+  test_tweaking("0000000000000000000000000000000000000000",
+		"0000000000000000000000000000000000000001",
+		1);
+  test_tweaking("0000000000000000000000000000000000000000",
+		"0000000000000000000000000000000000000100",
+		256);
+  test_tweaking("00000000000000000000000000000000ffffffff",
+		"0000000000000000000000000000000100000000",
+		1);
+  test_tweaking("ffffffffffffffffffffffffffffffffffffffff",
+		"0000000000000000000000000000000000000000",
+		1);
+
+  test_tweaking("ffffffffffffffffffffffffffffffffffffffff",
+		"fffffffffffffffffffffffffffffffffffffffe",
+		-1);
+  test_tweaking("ffffffffffffffffffffffffffffffffffffffff",
+		"fffffffffffffffffffffffffffffffffffffeff",
+		-256);
+  test_tweaking("ffffffffffffffffffffffffffffffff00000000",
+		"fffffffffffffffffffffffffffffffeffffffff",
+		-1);
+  test_tweaking("0000000000000000000000000000000000000000",
+		"ffffffffffffffffffffffffffffffffffffffff",
+		-1);
+}
