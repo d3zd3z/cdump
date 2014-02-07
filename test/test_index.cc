@@ -70,7 +70,7 @@ void IndexTracker::check_all() {
 }
 void IndexTracker::check_iter() {
   // Build the iterator out of it.
-  std::cout << "Making index\n";
+  // std::cout << "Making index\n";
   cdump::FileIndex::SortedIterator iter(&index);
 
   // Test the iterator.
@@ -91,12 +91,12 @@ void IndexTracker::check_iter() {
 
 TEST(Index, Generate) {
   IndexTracker index;
-  std::cout << "Building\n";
+  // std::cout << "Building\n";
   index.add(0, index_count);
-  std::cout << "Checking\n";
+  // std::cout << "Checking\n";
   index.check_all();
 
-  std::cout << "Testing iter\n";
+  // std::cout << "Testing iter\n";
   index.check_iter();
 }
 
