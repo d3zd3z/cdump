@@ -55,3 +55,11 @@ TEST(TUtil, RandomString) {
     ASSERT_EQ(line.size(), i);
   }
 }
+
+cdump::OID int_oid(int index) {
+  // Instead of converting the index into ascii, just use the binary
+  // representation.  All we really care is that they are different.
+  // It seems that the overhead of converting a number to a string is
+  // larger than performing the SHA1 hash itself.
+  return cdump::OID("blob", &index, sizeof(index));
+}

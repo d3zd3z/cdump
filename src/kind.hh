@@ -17,6 +17,8 @@ void kind_check(const char* cstr);
 void kind_check(const std::string& cstr);
 
 struct Kind {
+  friend struct OID;
+ protected:
   // The kind is really just a 32-bit unsigned integer, and the
   // compiler should be smart enough to treat it as such.  But, we
   // want to be able to treat it as a string.  It is represented with
@@ -26,6 +28,7 @@ struct Kind {
     char     textual[4];
   };
 
+ public:
   Kind(const char* cstr) {
     kind_check(cstr);
     std::memcpy(&raw, cstr, 4);
@@ -40,6 +43,11 @@ struct Kind {
   operator std::string() {
     std::string result(textual, 4);
     return result;
+  }
+
+  // Comparisons.
+  friend bool operator==(const Kind& a, const Kind& b) {
+    return a.raw == b.raw;
   }
 };
 

@@ -14,8 +14,16 @@ namespace cdump {
 OID::OID(Kind kind, std::string data) {
   SHA_CTX ctx;
   SHA1_Init(&ctx);
-  SHA1_Update(&ctx, std::string(kind).data(), 4);
+  SHA1_Update(&ctx, kind.textual, 4);
   SHA1_Update(&ctx, data.data(), data.size());
+  SHA1_Final(raw, &ctx);
+}
+
+OID::OID(Kind kind, const void* data, size_t size) {
+  SHA_CTX ctx;
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, kind.textual, 4);
+  SHA1_Update(&ctx, data, size);
   SHA1_Final(raw, &ctx);
 }
 
@@ -38,7 +46,7 @@ OID::OID(std::string hex) {
   }
 }
 
-std::string OID::to_hex() {
+std::string OID::to_hex() const {
   std::ostringstream buf;
 
   for (unsigned i = 0; i < hash_length; ++i) {
