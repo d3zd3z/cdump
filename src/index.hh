@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <string>
 #include <utility>
 #include <vector>
 #include "kind.hh"
@@ -76,13 +77,20 @@ class FileIndex {
     return nullptr;
   }
 
+  // Write out this index to the given file.  The 'size' is recorded
+  // with the index, and if it doesn't match on 'load', the index will
+  // not be used.
+  void save(const std::string name, uint32_t size);
+
   // The FullIterator iterates the FileIndex in sorted hash order.
   class SortedIterator {
     FileIndex* parent;
+   protected:
     std::vector<key_type> keys;
+    friend class FileIndex;
    public:
     SortedIterator(FileIndex* parent);
-    void blort();
+    const std::vector<key_type>& get_keys() { return keys; };
 
     // The iterator itself returned.
     struct iterator {

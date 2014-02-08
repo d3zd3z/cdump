@@ -16,8 +16,26 @@
 namespace {
 // Make this larger to test that the index stuff works with much
 // larger values.  This will take longer, though.
-// const int index_count = 10000000;
+// const int index_count = 1000000;
 const int index_count = 1000;
+
+// For testing, we need to map the integer index to various kinds.  To
+// keep the distribution interesting, use this very simple hash to
+// scramble the input sequence number.
+unsigned scramble(unsigned x) {
+  x = ((x >> 16) ^ x) * 0x45d9f3b;
+  x = ((x >> 16) ^ x) * 0x45d9f3b;
+  x = ((x >> 16) ^ x);
+  return x;
+}
+
+const std::vector<cdump::Kind> kind_table {
+  "blob", "dir ", "dir1", "dir2", "dir3", "ind0", "ind1", "ind2", "back"
+};
+
+cdump::Kind kind_of(unsigned sequence) {
+  return kind_table[scramble(sequence) % kind_table.size()];
+}
 
 class IndexTracker {
  public:
@@ -27,7 +45,7 @@ class IndexTracker {
     inserted.insert(item);
     // TODO: Test with differing kinds.
     std::pair<cdump::OID, cdump::FileIndex::mapped_type>
-	elt(int_oid(item), cdump::FileIndex::mapped_type {item, "blob"});
+	elt(int_oid(item), cdump::FileIndex::mapped_type {item, kind_of(item)});
     index.insert(elt);
   }
 
@@ -50,7 +68,7 @@ void IndexTracker::check_one(unsigned item) {
   ASSERT_NE(res, index.end());
   ASSERT_EQ(res->first, good);
   ASSERT_EQ(res->second.offset, item);
-  ASSERT_EQ(res->second.kind, cdump::Kind("blob"));
+  ASSERT_EQ(res->second.kind, kind_of(item));
 
   // Verify that tweaked hashes aren't findable.
   cdump::OID alt1 = good;
@@ -77,7 +95,7 @@ void IndexTracker::check_iter() {
   auto items = inserted;
   cdump::OID last_oid; // Assume we won't ever hash all zeros.
   for (const auto& elt : iter) {
-    ASSERT_EQ(elt.second.kind, cdump::Kind("blob"));
+    ASSERT_EQ(elt.second.kind, kind_of(elt.second.offset));
     ASSERT_EQ(elt.first, int_oid(elt.second.offset));
     ASSERT_GT(elt.first, last_oid);
     last_oid = elt.first;
@@ -98,6 +116,9 @@ TEST(Index, Generate) {
 
   // std::cout << "Testing iter\n";
   index.check_iter();
+
+  // Write it out.
+  index.index.save("sample.idx", index.inserted.size());
 }
 
 #ifdef OLD_INDEX_TEST

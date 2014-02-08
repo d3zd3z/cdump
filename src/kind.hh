@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <endian.h>
 
 namespace cdump {
 
@@ -39,8 +40,11 @@ struct Kind {
     std::memcpy(&raw, str.data(), 4);
   }
 
+  // Default constructor.
+  Kind() { Kind("blob"); }
+
   // Implicit conversion to string.
-  operator std::string() {
+  operator std::string() const {
     std::string result(textual, 4);
     return result;
   }
@@ -48,6 +52,11 @@ struct Kind {
   // Comparisons.
   friend bool operator==(const Kind& a, const Kind& b) {
     return a.raw == b.raw;
+  }
+  friend bool operator<(const Kind& a, const Kind& b) {
+    // In order for kinds to sort properly, they have to be sorted as
+    // bigendian.
+    return htobe32(a.raw) < htobe32(b.raw);
   }
 };
 

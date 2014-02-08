@@ -62,6 +62,11 @@ struct OID {
     return memcmp(a.raw, b.raw, OID::hash_length) == 0;
   }
 
+  // Peek at the first byte, needed to build the index.
+  unsigned peek_first() const {
+    return raw[0];
+  }
+
  private:
   friend struct std::hash<OID>;
   union {
