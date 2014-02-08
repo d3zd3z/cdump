@@ -62,6 +62,12 @@ struct OID {
     return memcmp(a.raw, b.raw, OID::hash_length) == 0;
   }
 
+  // Works like memcmp, < 0 is this < other, == 0 they are equal, and
+  // > 0 result means this > other.
+  int cmp(const OID& other) const {
+    return memcmp(raw, other.raw, hash_length);
+  }
+
   // Peek at the first byte, needed to build the index.
   unsigned peek_first() const {
     return raw[0];

@@ -17,12 +17,15 @@ FileIndex::SortedIterator::SortedIterator(FileIndex* parent) :parent(parent) {
   // using um = std::unordered_map<OID, Node>;
   using um = decltype(ram);
 
-  keys.reserve(parent->ram.size());
+  keys.reserve(parent->ram.size() + parent->fdata.size());
 
   // Build the keys out of the ram index.
   for (auto& it : parent->ram) {
     keys.emplace_back(it.first);
   }
+
+  // Add add the keys from the non-ram index.
+  parent->fdata.append_keys(keys);
 
   // Sort all of the keys.
   std::sort(keys.begin(), keys.end());
@@ -40,10 +43,32 @@ struct Header {
   uint32_t file_size;
 };
 
+// Write out the contents of the vector.
 template<class E>
 void vector_write(std::ostream& out, const std::vector<E>& elts) {
   out.write(reinterpret_cast<const char*>(elts.data()),
 	    elts.size() * sizeof(E));
+}
+
+// Read a vector.  This is technically not allowed, since the data()
+// method returns a const, and explicitly says not to modify the
+// underlying array.  But there isn't any other way to do this that
+// doesn't involve reading the data in a little at a time.
+template<class E>
+void vector_read(std::istream& in, std::vector<E>& elts) {
+  in.read(reinterpret_cast<char*>(elts.data()),
+	  elts.size() * sizeof(E));
+}
+
+// After loading a vector, fix the endianness.
+void fix_vector_endian(std::vector<uint32_t> elts) {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  (void) elts;  // Nothing
+#else
+  for (auto& elt : elts) {
+    elt = le32toh(elt);
+  }
+#endif
 }
 
 class Saver {
@@ -152,6 +177,96 @@ void FileIndex::save(const std::string name, uint32_t size) {
   if (result != 0) {
     throw std::ios::failure("Unable to rename tmp file");
   }
+}
+
+FileIndex::iterator FileIndex::find(const FileIndex::key_type& key) {
+  // Simple ram-only case just looks it up, builds the local result,
+  // and returns the pointer.
+  const auto fr = ram.find(key);
+  if (fr == ram.end()) {
+    if (fdata.find(key, find_result))
+      return &find_result;
+    else
+      return end();
+  }
+  find_result = *fr;
+  return &find_result;
+}
+
+// Searching of loaded data.
+bool FileIndex::FileData::find(const FileIndex::key_type& key, FileIndex::value_type& result) {
+  if (tops.size() != 256)
+    return false;
+
+  const auto first = key.peek_first();
+
+  // It is important that these are both signed, since high can go
+  // negative.
+  int low = (first > 0) ? tops[first-1] : 0;
+  int high = tops[first] - 1;
+
+  while (high >= low) {
+    unsigned mid = low + ((high - low) / 2);
+    auto cmp = key.cmp(hashes[mid]);
+    if (cmp < 0)
+      high = mid - 1;
+    else if (cmp > 0)
+      low = mid + 1;
+    else {
+      // It matches, return the result.
+      result.first = key;
+      result.second.offset = offsets[mid];
+      result.second.kind = kind_map[kinds[mid]];
+      return true;
+    }
+  }
+
+  (void) result;
+  return false;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Loading
+
+void FileIndex::FileData::load(const std::string name, uint32_t size) {
+  std::ifstream file(name, std::ios::binary|std::ios::in);
+  if (!file.good()) {
+    throw std::ios::failure("Unable to read index file");
+  }
+  file.exceptions(file.badbit|file.failbit|file.eofbit);
+
+  Header head;
+  file.read(reinterpret_cast<char*>(&head), sizeof(head));
+  if (memcmp(head.magic, magic, magic_size) != 0)
+    throw std::ios::failure("Index header has invalid magic");
+  if (le32toh(head.version) != magic_version)
+    throw std::ios::failure("Index file incorrect version");
+  if (le32toh(head.file_size) != size)
+    throw std::ios::failure("Index file incorrect size");
+
+  // Reading the data in.  Vector doesn't give us write access to the
+  // underlying data...  But, we can actually write to it anyway.
+  tops.resize(256);
+  vector_read(file, tops);
+  fix_vector_endian(tops);
+
+  const unsigned count = tops[255];
+  hashes.resize(count);
+  vector_read(file, hashes);
+
+  offsets.resize(count);
+  vector_read(file, offsets);
+  fix_vector_endian(offsets);
+
+  uint32_t kind_count;
+  file.read(reinterpret_cast<char*>(&kind_count), sizeof(kind_count));
+  kind_count = le32toh(kind_count);
+
+  kind_map.resize(kind_count);
+  vector_read(file, kind_map);
+
+  kinds.resize(count);
+  vector_read(file, kinds);
 }
 
 } // namespace cdump

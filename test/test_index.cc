@@ -107,7 +107,13 @@ void IndexTracker::check_iter() {
 }
 } // namespace
 
-TEST(Index, Generate) {
+class IndexTest : public Tmpdir {
+};
+
+TEST_F(IndexTest, Generate) {
+  const std::string name1 = path + "/sample.idx";
+  const std::string name2 = path + "/sample2.idx";
+
   IndexTracker index;
   // std::cout << "Building\n";
   index.add(0, index_count);
@@ -118,197 +124,23 @@ TEST(Index, Generate) {
   index.check_iter();
 
   // Write it out.
-  index.index.save("sample.idx", index.inserted.size());
+  index.index.save(name1, index.inserted.size());
+
+  // And load it back in.
+  index.index.load(name1, index.inserted.size());
+
+  // Testing that.
+  index.check_all();
+  index.check_iter();
+
+  // Add some more.
+  index.add(index_count, index_count*2);
+  index.check_all();
+  index.check_iter();
+
+  // Save and restore.
+  index.index.save(name2, index.inserted.size());
+  index.index.load(name2, index.inserted.size());
+  index.check_all();
+  index.check_iter();
 }
-
-#ifdef OLD_INDEX_TEST
-namespace {
-// Make this larger to test that the index stuff works with much
-// larger values.  This will take longer, though.
-// const int index_count = 10000000;
-const int index_count = 1000;
-
-// The index has some constraints on the API, specifically, index[key]
-// = value isn't supported ([] returns a const ref).
-
-template<typename Indexer>
-class IndexTracker {
- public: // Public for testing transparency.
-  std::set<unsigned> inserted;
-  Indexer index;
- public:
-  void add(unsigned item) {
-    inserted.insert(item);
-    std::pair<cdump::OID, unsigned> elt(int_oid(item), item);
-    // cdump::OID oid = int_oid(item);
-    // index[oid] = item;
-    auto res = index.insert(elt);
-    ASSERT_TRUE(res.second);
-  }
-
-  // Add [lower, upper) to the structure.
-  void add(unsigned lower, unsigned upper) {
-    for (unsigned i = lower; i < upper; ++i)
-      add(i);
-  }
-
-  void check_one(unsigned item);
-  void check_all();
-};
-
-template<typename Indexer>
-void IndexTracker<Indexer>::check_one(unsigned item) {
-  cdump::OID good = int_oid(item);
-  auto res = index.find(good);
-  ASSERT_NE(res, index.end());
-  ASSERT_EQ(res->first, good);
-  ASSERT_EQ(res->second, item);
-
-  // Verify that tweaked ones aren't found.
-  auto alt1 = good;
-  ++alt1;
-  res = index.find(alt1);
-  ASSERT_EQ(res, index.end());
-
-  auto alt2 = good;
-  ++alt2;
-  res = index.find(alt2);
-  ASSERT_EQ(res, index.end());
-}
-
-template<typename Indexer>
-void IndexTracker<Indexer>::check_all() {
-  for (auto it : inserted) {
-    check_one(it);
-  }
-}
-
-}
-
-TEST(Index, RAM) {
-  IndexTracker<cdump::FileIndex> indexer;
-  indexer.add(0, index_count);
-}
-
-#ifdef SHOW_TIMING_TESTS
-TEST(Index, Generate) {
-  // Just generate a lot of OIDs to see how quickly that is.
-  for (int i = 0; i < index_count; ++i) {
-    cdump::OID thingy = int_oid(i);
-    (void) thingy;
-  }
-}
-#endif // SHOW_TIMING_TESTS
-
-#ifndef SHOW_TIMING_TESTS
-TEST(Index, Insert) {
-  std::map<cdump::OID, int> index;
-
-  std::cout << "Creating\n";
-  for (int i = 0; i < index_count; ++i) {
-    cdump::OID thingy = int_oid(i);
-    index[thingy] = i;
-  }
-
-  // Lets show them.
-  /*
-  for (auto& it : index) {
-    std::cout << it.first.to_hex() << std::endl;
-  }
-  */
-  std::cout << "Freeing\n";
-}
-#endif // SHOW_TIMING_TESTS
-
-TEST(Index, HashInsert) {
-  std::unordered_map<cdump::OID, int> index;
-
-  std::cout << "Creating\n";
-  for (int i = 0; i < index_count; ++i) {
-    cdump::OID thingy = int_oid(i);
-    index[thingy] = i;
-  }
-  std::cout << "Freeing\n";
-}
-
-TEST(Index, Lookup) {
-  IndexTracker<std::map<cdump::OID, unsigned>> indexer;
-
-  indexer.add(0, index_count);
-  indexer.check_all();
-}
-
-// What this hash test shows is that the unordered_map is
-// significantly faster on these entries (about 2x as fast), and that
-// the overhead to build the array of keys at the end is negligible.
-// The memory usage is (surprisingly) similar, although the array of
-// keys at the end does take a bit more.
-TEST(Index, HashLookup) {
-  IndexTracker<std::unordered_map<cdump::OID, unsigned>> indexer;
-  indexer.add(0, index_count);
-  indexer.check_all();
-
-#if 0
-  // To make this "fair", include the time to get all of the keys, and
-  // look them up.
-  std::vector<cdump::OID> keys;
-  for (auto& it : indexer.index) {
-    keys.push_back(it.first);
-  }
-  std::sort(keys.begin(), keys.end());
-#endif
-}
-
-// Just as a sanity test, try allocating these with references.
-TEST(Index, HashPtr) {
-  std::unordered_map<std::shared_ptr<cdump::OID>, unsigned> index;
-
-  std::cout << "Creating\n";
-  for (unsigned i = 0; i < index_count; ++i) {
-    cdump::OID* pitem = new cdump::OID(int_oid(i));
-    index[std::shared_ptr<cdump::OID>(pitem)] = i;
-  }
-  std::cout << "Freeing\n";
-}
-
-TEST(Index, TreePtr) {
-  std::map<std::shared_ptr<cdump::OID>, unsigned> index;
-
-  std::cout << "Creating\n";
-  for (unsigned i = 0; i < index_count; ++i) {
-    cdump::OID* pitem = new cdump::OID(int_oid(i));
-    index[std::shared_ptr<cdump::OID>(pitem)] = i;
-  }
-  std::cout << "Freeing\n";
-}
-
-#ifdef OLD_TEST
-TEST(Index, OldLookup) {
-  std::map<cdump::OID, int> index;
-
-  for (int i = 0; i < index_count; ++i) {
-    cdump::OID thingy = int_oid(i);
-    index[thingy] = i;
-  }
-
-  for (int i = 0; i < index_count; ++i) {
-    cdump::OID thingy = int_oid(i);
-    auto res = index.find(thingy);
-    ASSERT_NE(res, index.end());
-    ASSERT_EQ(res->first, thingy);
-    ASSERT_EQ(res->second, i);
-
-    // Verify that tweaked ones aren't found.
-    cdump::OID alt1 = thingy;
-    ++alt1;
-    res = index.find(alt1);
-    ASSERT_EQ(res, index.end());
-
-    cdump::OID alt2 = thingy;
-    ++alt2;
-    res = index.find(alt1);
-    ASSERT_EQ(res, index.end());
-  }
-}
-#endif
-#endif // OLD_INDEX_TEST

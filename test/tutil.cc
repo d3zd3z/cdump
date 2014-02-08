@@ -3,6 +3,10 @@
 #include <iostream>
 #include "gtest/gtest.h"
 
+#include <random>
+#include <string>
+#include <boost/filesystem.hpp>
+
 #include "tutil.hh"
 
 namespace {
@@ -62,4 +66,30 @@ cdump::OID int_oid(int index) {
   // It seems that the overhead of converting a number to a string is
   // larger than performing the SHA1 hash itself.
   return cdump::OID("blob", &index, sizeof(index));
+}
+
+//////////////////////////////////////////////////////////////////////
+// Tmpdir tests.
+
+void Tmpdir::SetUp() {
+  std::random_device rd;  // Maybe global, or better numbers?
+
+  for (int i = 0; i < 5; ++i) {
+    std::string work = "/var/tmp/test-";
+    for (int j = 0; j < 10; ++j) {
+      work += rd() % 26 + 'a';
+    }
+    auto status = boost::filesystem::create_directory(work);
+    if (status) {
+      path = work;
+      return;
+    }
+  }
+  throw std::runtime_error("Unable to make tmp dir for test");
+}
+
+void Tmpdir::TearDown() {
+  auto count = boost::filesystem::remove_all(path);
+  (void) count;
+  // std::cout << "Remove " << count << " entries in " << path << std::endl;
 }
