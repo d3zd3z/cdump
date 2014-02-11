@@ -51,7 +51,7 @@ void Dumper::dump() {
 void Dumper::add(unsigned pos) {
   if (pos < size) {
     const auto ch = data[pos];
-    hex << ' ' << std::hex << std::setw(2) << (unsigned)ch;
+    hex << ' ' << std::hex << std::setfill('0') << std::setw(2) << (unsigned)ch;
     if (std::isprint(ch))
       ascii << (char)ch;
     else
@@ -63,8 +63,8 @@ void Dumper::add(unsigned pos) {
 }
 
 void Dumper::ship(unsigned pos) {
-  std::cout << std::hex << std::setw(6) << pos
-      << ' ' << hex.str() << " |" << ascii.str() << '|' << std::endl;
+  std::cout << std::hex << std::setfill('0') << std::setw(6) << pos
+      << ' ' << hex.str() << " |" << ascii.str() << '|' << std::endl << std::dec;
   reset();
 }
 

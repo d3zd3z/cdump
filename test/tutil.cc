@@ -68,6 +68,12 @@ cdump::OID int_oid(int index) {
   return cdump::OID("blob", &index, sizeof(index));
 }
 
+cdump::ChunkPtr make_random_chunk(unsigned size, unsigned index) {
+  // TODO: How to do this without a copy of the vector.
+  auto buf = make_random_string(size, index);
+  return cdump::ChunkPtr(new cdump::PlainChunk("blob", buf.data(), buf.size()));
+}
+
 //////////////////////////////////////////////////////////////////////
 // Tmpdir tests.
 

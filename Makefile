@@ -1,7 +1,7 @@
 # Not quite right, but close.
 
 all: build/Makefile
-	make -C build
+	$(MAKE) -C build
 
 # Ideally, this would rebuild based on files added and removed, but
 # that is hard to determine.
