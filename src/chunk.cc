@@ -190,6 +190,7 @@ PlainChunk::has_zdata() {
 	return true;
       }
   }
+  abort();
 }
 
 const char*

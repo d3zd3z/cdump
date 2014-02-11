@@ -15,9 +15,6 @@
 namespace cdump {
 
 FileIndex::SortedIterator::SortedIterator(FileIndex* parent) :parent(parent) {
-  // using um = std::unordered_map<OID, Node>;
-  using um = decltype(ram);
-
   keys.reserve(parent->ram.size() + parent->fdata.size());
 
   // Build the keys out of the ram index.
