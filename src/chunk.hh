@@ -15,6 +15,9 @@ class Chunk;
 
 // A shared chunk pointer, convenient alias, since they can easily be
 // used this way.
+// TODO: Use a unique ptr for this.  Most use cases prefer the lower
+// overhead, and in any case, they can be converted to shared_ptr if
+// necessary.
 typedef std::shared_ptr<Chunk> ChunkPtr;
 
 /**
@@ -53,6 +56,8 @@ class Chunk {
  public:
 
   using data_type = std::vector<char>;
+
+  // TODO: don't use get_xxx() names for getters, just use the name.
 
   /// Get the object ID for this chunk.
   OID& get_oid() { return oid; }

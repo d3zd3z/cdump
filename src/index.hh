@@ -17,6 +17,8 @@
 
 namespace cdump {
 
+// TODO: allow the bool conversion for iterator results.
+
 /**
  * The FileIndex maintains the mapping for a single index file.
  *

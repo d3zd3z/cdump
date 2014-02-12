@@ -9,6 +9,8 @@
 // Nothing yet.
 namespace cdump {
 
+// TODO: Implement operator<<
+
 struct OID {
  public:
   static const unsigned hash_length = 20;
