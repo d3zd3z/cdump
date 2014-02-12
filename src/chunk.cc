@@ -132,10 +132,10 @@ ChunkPtr Chunk::read(std::istream& in) {
   int uclen = le32toh(head.uclen);
 
   if (uclen == -1) {
-    return ChunkPtr(new PlainChunk(head.kind, head.oid, in, clen));
+    return std::make_shared<PlainChunk>(head.kind, head.oid, in, clen);
   } else
-    return ChunkPtr(new CompressedChunk(head.kind, head.oid, in,
-					uclen, clen));
+    return std::make_shared<CompressedChunk>(head.kind, head.oid, in,
+					     uclen, clen);
 }
 
 // Construct from given data.
