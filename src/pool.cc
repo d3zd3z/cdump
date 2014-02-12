@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <string>
 
+#include <unistd.h>
+
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -119,11 +121,56 @@ std::vector<OID> Pool::get_backups() const {
 Pool::Pool(const std::string path, bool writable)
   :base(path), writable(writable)
 {
+  lock();
   bf::path props(base);
   props /= "metadata";
   props /= "props.txt";
   read_props(props.string());
   scan_files();
+}
+
+Pool::~Pool() {
+  unlock();
+}
+
+namespace {
+
+// Wrapper class to extract the protected _M_file field.  This relies
+// on implementation details of libstdc++, but should fail to compile
+// if these details change.
+template<typename CharT, typename Traits = std::char_traits<CharT>>
+class basic_getfilebuf : public std::basic_filebuf<CharT, Traits> {
+ public:
+  int fd() { return this->_M_file.fd(); }
+};
+
+int getfd(std::fstream& file) {
+  typedef basic_getfilebuf<char> getfilebuf;
+  auto buf = static_cast<getfilebuf*>(file.rdbuf());
+  return buf->fd();
+}
+
+} // namespace
+
+void Pool::lock() {
+  auto work = base;
+  work /= "lock";
+  lock_file.open(work.string());
+
+  auto fd = getfd(lock_file);
+  auto res = lockf(fd, F_TLOCK, 0);
+  if (res != 0) {
+    throw std::runtime_error("Unable to acquire lock on pool");
+  }
+}
+
+void Pool::unlock() {
+  auto fd = getfd(lock_file);
+  auto res = lockf(fd, F_ULOCK, 0);
+  if (res != 0) {
+    // Warn here?
+    std::cerr << "Unable to release lock on pool" << std::endl;
+  }
 }
 
 ChunkPtr Pool::find(const OID& key) {

@@ -27,6 +27,12 @@ class Pool {
   const boost::filesystem::path base;
   const bool writable;
 
+  // The stream used to lock the pool.
+  std::fstream lock_file;
+
+  void lock();
+  void unlock();
+
   struct Props {
     boost::uuids::uuid uuid;
     bool newfile;
@@ -65,6 +71,7 @@ class Pool {
    * @param writable indicates if this pool should be writable.
    */
   Pool(const std::string path, bool writable = false);
+  virtual ~Pool();
 
   /// The default limit on the size of a file for the pool.  640 MB
   /// fits on a CD, with 7 fitting on a DVD.
