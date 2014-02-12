@@ -21,7 +21,8 @@ add_definitions(-std=c++11)
 
 ######################################################################
 # Make sure we have boost.
-find_package(Boost 1.54 REQUIRED COMPONENTS system filesystem)
+find_package(Boost 1.54 REQUIRED COMPONENTS system filesystem
+	program_options regex)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(src)
@@ -34,7 +35,7 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 ######################################################################
 # And ZLIB.
 find_package(ZLIB REQUIRED)
-include_directories({ZLIB_DINCLUDE_DIRS})
+include_directories(${ZLIB_DINCLUDE_DIRS})
 
 ######################################################################
 # Most of the code.
@@ -48,7 +49,6 @@ target_link_libraries(maintest gtest ${Boost_LIBRARIES})
 target_link_libraries(maintest cdump)
 target_link_libraries(maintest ${OPENSSL_LIBRARIES})
 target_link_libraries(maintest ${ZLIB_LIBRARIES})
-# target_link_libraries(maintest ${BOOST_LIBRARIES})
 
 add_subdirectory(gtest-1.7.0)
 target_include_directories(maintest PRIVATE gtest-1.7.0/include)
