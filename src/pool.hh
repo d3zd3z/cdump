@@ -27,8 +27,8 @@ class Pool {
   const boost::filesystem::path base;
   const bool writable;
 
-  // The stream used to lock the pool.
-  std::fstream lock_file;
+  // The file descriptor of the lock file.
+  int lock_fd;
 
   void lock();
   void unlock();

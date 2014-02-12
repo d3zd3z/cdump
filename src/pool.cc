@@ -8,6 +8,11 @@
 #include <stdexcept>
 #include <string>
 
+// TODO: Move locking to it's own class to clean up the implementation
+// here.
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #include <boost/filesystem.hpp>
@@ -133,44 +138,27 @@ Pool::~Pool() {
   unlock();
 }
 
-namespace {
-
-// Wrapper class to extract the protected _M_file field.  This relies
-// on implementation details of libstdc++, but should fail to compile
-// if these details change.
-template<typename CharT, typename Traits = std::char_traits<CharT>>
-class basic_getfilebuf : public std::basic_filebuf<CharT, Traits> {
- public:
-  int fd() { return this->_M_file.fd(); }
-};
-
-int getfd(std::fstream& file) {
-  typedef basic_getfilebuf<char> getfilebuf;
-  auto buf = static_cast<getfilebuf*>(file.rdbuf());
-  return buf->fd();
-}
-
-} // namespace
-
 void Pool::lock() {
   auto work = base;
   work /= "lock";
-  lock_file.open(work.string());
+  lock_fd = ::open(work.c_str(), O_RDWR | O_CREAT);
+  if (lock_fd < 0)
+    throw std::runtime_error("Unable to open lock file");
 
-  auto fd = getfd(lock_file);
-  auto res = lockf(fd, F_TLOCK, 0);
+  auto res = lockf(lock_fd, F_TLOCK, 0);
   if (res != 0) {
     throw std::runtime_error("Unable to acquire lock on pool");
   }
 }
 
 void Pool::unlock() {
-  auto fd = getfd(lock_file);
-  auto res = lockf(fd, F_ULOCK, 0);
+  auto res = lockf(lock_fd, F_ULOCK, 0);
   if (res != 0) {
     // Warn here?
     std::cerr << "Unable to release lock on pool" << std::endl;
   }
+  close(lock_fd);
+  lock_fd = -1;
 }
 
 ChunkPtr Pool::find(const OID& key) {
