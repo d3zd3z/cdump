@@ -14,7 +14,7 @@ add_definitions(-Wall -Wextra)
 add_definitions(-Werror)
 
 # Useful for getting color, even when piped.
-add_definitions(-fcolor-diagnostics)
+# add_definitions(-fcolor-diagnostics)
 
 # Use the latest C standard.
 add_definitions(-std=c++11)
