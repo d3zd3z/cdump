@@ -68,6 +68,22 @@ cdump::OID int_oid(int index) {
   return cdump::OID("blob", &index, sizeof(index));
 }
 
+std::vector<unsigned> build_sizes() {
+  std::set<unsigned> result;
+
+  for (unsigned i = 0; i < 19; ++i) {
+    unsigned bit = 1 << i;
+    if (bit > 0)
+      result.insert(bit - 1);
+    result.insert(bit);
+    result.insert(bit + 1);
+  }
+
+  std::vector<unsigned> vec;
+  std::copy(result.begin(), result.end(), std::back_inserter(vec));
+  return vec;
+}
+
 cdump::ChunkPtr make_random_chunk(unsigned size, unsigned index) {
   // TODO: How to do this without a copy of the vector.
   auto buf = make_random_string(size, index);

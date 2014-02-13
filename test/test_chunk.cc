@@ -35,27 +35,6 @@ TEST(Chunk, Compression) {
   cdump::Chunk::decompress(out1.data(), len1, full1.data(), full1.size());
 }
 
-/**
- * Build a vector of useful sizes to test.  The result is a sorted
- * vector containing all of the powers of two, up until 256K, and one
- * less, and one greater than each of those values.
- */
-std::vector<unsigned> build_sizes() {
-  std::set<unsigned> result;
-
-  for (unsigned i = 0; i < 19; ++i) {
-    unsigned bit = 1 << i;
-    if (bit > 0)
-      result.insert(bit - 1);
-    result.insert(bit);
-    result.insert(bit + 1);
-  }
-
-  std::vector<unsigned> vec;
-  std::copy(result.begin(), result.end(), std::back_inserter(vec));
-  return vec;
-}
-
 namespace {
 class ChunkTracker {
   struct Info {
