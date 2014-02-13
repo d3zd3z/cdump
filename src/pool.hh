@@ -10,6 +10,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
 
+#include "lockfile.hh"
 #include "index.hh"
 #include "chunk.hh"
 #include "oid.hh"
@@ -28,10 +29,8 @@ class Pool {
   const bool writable;
 
   // The file descriptor of the lock file.
-  int lock_fd;
-
-  void lock();
-  void unlock();
+  std::string lock_path();
+  LockFile lock;
 
   struct Props {
     boost::uuids::uuid uuid;
@@ -71,7 +70,6 @@ class Pool {
    * @param writable indicates if this pool should be writable.
    */
   Pool(const std::string path, bool writable = false);
-  virtual ~Pool();
 
   /// The default limit on the size of a file for the pool.  640 MB
   /// fits on a CD, with 7 fitting on a DVD.

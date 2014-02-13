@@ -8,13 +8,6 @@
 #include <stdexcept>
 #include <string>
 
-// TODO: Move locking to it's own class to clean up the implementation
-// here.
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -124,9 +117,9 @@ std::vector<OID> Pool::get_backups() const {
 }
 
 Pool::Pool(const std::string path, bool writable)
-  :base(path), writable(writable)
+  : base(path), writable(writable),
+    lock(lock_path().c_str())
 {
-  lock();
   bf::path props(base);
   props /= "metadata";
   props /= "props.txt";
@@ -134,31 +127,10 @@ Pool::Pool(const std::string path, bool writable)
   scan_files();
 }
 
-Pool::~Pool() {
-  unlock();
-}
-
-void Pool::lock() {
+std::string Pool::lock_path() {
   auto work = base;
   work /= "lock";
-  lock_fd = ::open(work.c_str(), O_RDWR | O_CREAT);
-  if (lock_fd < 0)
-    throw std::runtime_error("Unable to open lock file");
-
-  auto res = lockf(lock_fd, F_TLOCK, 0);
-  if (res != 0) {
-    throw std::runtime_error("Unable to acquire lock on pool");
-  }
-}
-
-void Pool::unlock() {
-  auto res = lockf(lock_fd, F_ULOCK, 0);
-  if (res != 0) {
-    // Warn here?
-    std::cerr << "Unable to release lock on pool" << std::endl;
-  }
-  close(lock_fd);
-  lock_fd = -1;
+  return work.string();
 }
 
 ChunkPtr Pool::find(const OID& key) {
