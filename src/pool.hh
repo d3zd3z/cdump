@@ -6,6 +6,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <forward_list>
 
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -53,9 +54,10 @@ class Pool {
     File(const Pool& parent, unsigned pos);
   };
 
-  // TODO: I seem to be unable to construct these in place, so
-  // allocate, with a unique_ptr.
-  std::vector<std::unique_ptr<File> > files;
+  // All of the pool files, in reverse order (pushed at the front).
+  // Using a forward_list allows unmovable items to be built directly
+  // inside.
+  std::forward_list<File> files;
 
   void scan_files();
 

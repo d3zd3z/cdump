@@ -135,10 +135,10 @@ std::string Pool::lock_path() {
 
 ChunkPtr Pool::find(const OID& key) {
   for (auto& f : files) {
-    const auto res = f->index.find(key);
-    if (res != f->index.end()) {
-      f->file.seekg(res->second.offset);
-      return Chunk::read(f->file);
+    const auto res = f.index.find(key);
+    if (res != f.index.end()) {
+      f.file.seekg(res->second.offset);
+      return Chunk::read(f.file);
     }
   }
 
@@ -177,9 +177,8 @@ void Pool::scan_files() {
   std::sort(known.begin(), known.end());
 
   // Open each of the files.
-  files.reserve(known.size());
   for (auto elt : known) {
-    files.emplace_back(std::unique_ptr<File>(new File(*this, elt)));
+    files.emplace_front(*this, elt);
   }
 
   // std::copy(known.begin(), known.end(),
