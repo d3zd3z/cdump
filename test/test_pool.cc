@@ -2,10 +2,144 @@
 
 #include "pool.hh"
 #include "pdump.hh"
+#include "tutil.hh"
 #include "gtest/gtest.h"
 
 #include <boost/filesystem.hpp>
 
+class Pool : public Tmpdir {
+  // Use indirection, since this is driven by requests.
+  std::unique_ptr<cdump::Pool> pool;
+  std::set<unsigned> known;
+ public:
+  virtual void SetUp();
+  virtual void TearDown();
+
+  void create(unsigned limit = cdump::Pool::default_limit,
+	      bool newlib = false);
+  void open(bool writable = false);
+  void close();
+  void add(unsigned index);
+  void flush();
+
+  void check(unsigned index);
+
+  // Add [low-high) elements.
+  void add(unsigned low, unsigned high) {
+    for (unsigned i = low; i < high; ++i)
+      add(i);
+  }
+
+  // Check all of them.
+  void check() {
+    for (auto elt : known) {
+      check(elt);
+    }
+  }
+};
+
+void Pool::SetUp() {
+  Tmpdir::SetUp();
+  // std::cout << "Pool setup at: " << path << std::endl;
+}
+
+void Pool::TearDown() {
+  std::cout << "Pool teardown at: " << path << std::endl;
+  // Tmpdir::TearDown();
+}
+
+void Pool::create(unsigned limit, bool newlib) {
+  ASSERT_FALSE(bool(pool));
+  cdump::Pool::create_pool(path, limit, newlib);
+}
+
+void Pool::open(bool writable) {
+  ASSERT_FALSE(bool(pool));
+  pool = std::unique_ptr<cdump::Pool>(new cdump::Pool(path, writable));
+}
+
+void Pool::close() {
+  ASSERT_TRUE(bool(pool));
+  delete pool.release();
+}
+
+void Pool::flush() {
+  ASSERT_TRUE(bool(pool));
+  pool->flush();
+}
+
+void Pool::add(unsigned index) {
+  ASSERT_TRUE(bool(pool));
+  ASSERT_EQ(known.count(index), 0u);
+  auto ch = make_random_chunk(32, index);
+  pool->insert(ch);
+  known.insert(index);
+}
+
+void Pool::check(unsigned index) {
+  auto ch = make_random_chunk(32, index);
+  auto ch2 = pool->find(ch->get_oid());
+  ASSERT_TRUE(bool(ch2));
+  ASSERT_EQ(ch->size(), ch2->size());
+  ASSERT_EQ(memcmp(ch->data(), ch2->data(), ch->size()), 0);
+}
+
+TEST_F(Pool, Creation) {
+  create();
+  open(true);
+  add(1, 2000);
+  flush();
+  check();
+
+  close();
+  open(true);
+  check();
+  add(2000, 4000);
+  check();
+
+  close();
+  open(true);
+  check();
+}
+
+TEST_F(Pool, NewFile) {
+  create(cdump::Pool::default_limit, true);
+  open(true);
+  add(1, 2000);
+  close();
+
+  // TODO: Verify that it is present.
+}
+
+// TODO: Index recovery.
+
+#if 0
+TEST(Pool, Basic) {
+  bool res = boost::filesystem::create_directory("fazzle");
+  ASSERT_TRUE(res);
+  cdump::Pool::create_pool("fazzle");
+
+  cdump::Pool pool("fazzle", true);
+  auto sizes = build_sizes();
+
+  for (auto size : sizes) {
+    auto ch = make_random_chunk(size, size);
+    pool.insert(ch);
+  }
+  pool.flush();
+
+  // Verify they could be written.
+  for (auto size : sizes) {
+    auto ch1 = make_random_chunk(size, size);
+    auto ch2 = pool.find(ch1->get_oid());
+    ASSERT_TRUE(bool(ch2));
+    ASSERT_EQ(ch1->size(), ch2->size());
+    ASSERT_EQ(memcmp(ch1->data(), ch2->data(), ch1->size()), 0);
+  }
+}
+#endif
+
+#if 0
 TEST(Pool, Creation) {
   // bool res = boost::filesystem::create_directory("test-pool");
   // ASSERT_TRUE(res);
@@ -31,3 +165,4 @@ TEST(Pool, Creation) {
   }
   */
 }
+#endif

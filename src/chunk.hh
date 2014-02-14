@@ -100,6 +100,11 @@ class Chunk {
    */
   void write(std::ostream& out);
 
+  /**
+   * Determine how many bytes it will take to write this chunk out.
+   */
+  unsigned write_size();
+
   struct HeaderInfo {
     Kind kind;
     OID  oid;

@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <iostream>
 
 namespace cdump {
 
@@ -18,7 +19,7 @@ class LockFile {
   bool locked;
  public:
   LockFile(const char* path) :locked(false) {
-    fd = ::open(path, O_RDWR | O_CREAT);
+    fd = ::open(path, O_RDWR | O_CREAT, 0666);
     if (fd < 0)
       throw std::runtime_error("Unable to open lock file");
 
@@ -43,8 +44,8 @@ class LockFile {
       auto res = lockf(fd, F_ULOCK, 0);
       if (res != 0)
 	std::cerr << "Unable to release lock on pool" << std::endl;
+      locked = false;
     }
-    locked = false;
   }
 };
 

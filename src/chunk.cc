@@ -77,6 +77,11 @@ struct Header {
 };
 
 const char padding[] = {0};
+
+// Round a size up to the next size increment.
+unsigned padded(unsigned size) {
+  return (size + 15) & ~15;
+}
 } // namespace
 
 void Chunk::write(std::ostream& out) {
@@ -105,6 +110,15 @@ void Chunk::write(std::ostream& out) {
     out.write(padding, pad_len);
 }
 
+// TODO: Test this function.
+unsigned Chunk::write_size() {
+  if (has_zdata()) {
+    return padded(sizeof(Header) + zsize());
+  } else {
+    return padded(sizeof(Header) + size());
+  }
+}
+
 bool Chunk::read_header(std::istream& in, HeaderInfo& info) {
   Header head;
   in.read(reinterpret_cast<char*>(&head), sizeof(head));
@@ -119,7 +133,7 @@ bool Chunk::read_header(std::istream& in, HeaderInfo& info) {
   } else {
     info.size = uclen;
   }
-  info.stored_size = (sizeof(head) + payload_len + 15) & ~15;
+  info.stored_size = padded(sizeof(head) + payload_len);
   return true;
 }
 

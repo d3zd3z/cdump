@@ -60,6 +60,7 @@ void ChunkTracker::add(unsigned size, unsigned index) {
 
 void ChunkTracker::check_offsets() {
   // Collect all of the chunks, and order them by size.
+  // TODO: Figure out how to store references in this vector.
   std::vector<Info> byoffset;
 
   std::transform(stored.begin(), stored.end(), std::back_inserter(byoffset),

@@ -33,15 +33,18 @@ class Pool {
   std::string lock_path();
   LockFile lock;
 
+  // The properties from the backup.
   struct Props {
     boost::uuids::uuid uuid;
     bool newfile;
     unsigned limit;
   };
-
   Props props;
-
   void read_props(const std::string path);
+
+  // `props.newfile` gets copied here, and this is cleared, since
+  // newfile only applies the first time a write happens.
+  bool first_newfile;
 
   // Within each pool, we have zero or more files.  At most, the last
   // file can be open for writing.  Generally, the intermediate ones
@@ -50,8 +53,11 @@ class Pool {
     unsigned     pos;
     std::fstream file;
     FileIndex    index;
+    unsigned     size;
 
-    File(const Pool& parent, unsigned pos);
+    File(const Pool& parent, unsigned pos, bool create = false);
+    void make_writable(const Pool& parent);
+    void unmake_writable(const Pool& parent);
   };
 
   // All of the pool files, in reverse order (pushed at the front).
@@ -60,6 +66,17 @@ class Pool {
   std::forward_list<File> files;
 
   void scan_files();
+
+  // Indicates we've started writing.  When true, files.front().file
+  // will be opened for writing, and write_pos will be set to the
+  // position to write into that file.
+  bool dirty = false;
+  unsigned write_pos = 0;
+
+  // Prepare to write `needed` bytes of data.  When finished, 'dirty'
+  // will be tru, and files.front().file will be opened for write, and
+  // write_pos set to the position in that file to write at.
+  void prepare_write(unsigned needed);
 
   std::string construct_name(unsigned pos, const std::string extension) const;
 
@@ -72,6 +89,10 @@ class Pool {
    * @param writable indicates if this pool should be writable.
    */
   Pool(const std::string path, bool writable = false);
+
+  ~Pool() {
+    flush();
+  }
 
   /// The default limit on the size of a file for the pool.  640 MB
   /// fits on a CD, with 7 fitting on a DVD.
@@ -105,6 +126,12 @@ class Pool {
    * the chunk couldn't be found.
    */
   ChunkPtr find(const OID& key);
+
+  /**
+   * Insert the given chunk into the storage pool.
+   */
+  void insert(ChunkPtr chunk);
+  void flush();
 };
 
 } // namespace cdump

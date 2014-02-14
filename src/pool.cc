@@ -120,10 +120,11 @@ Pool::Pool(const std::string path, bool writable)
   : base(path), writable(writable),
     lock(lock_path().c_str())
 {
-  bf::path props(base);
-  props /= "metadata";
-  props /= "props.txt";
-  read_props(props.string());
+  bf::path ppath(base);
+  ppath /= "metadata";
+  ppath /= "props.txt";
+  read_props(ppath.string());
+  first_newfile = props.newfile;
   scan_files();
 }
 
@@ -143,6 +144,85 @@ ChunkPtr Pool::find(const OID& key) {
   }
 
   return ChunkPtr();
+}
+
+void Pool::prepare_write(unsigned size) {
+  bool force_new = first_newfile;
+
+  // Decide if we need to open a new file, or the existing one.
+  if (dirty) {
+    // If there is room, just write.
+    if (write_pos + size <= props.limit)
+      return;
+
+    // Otherwise, flush, and move on to a new file.
+    flush();
+    force_new = true;
+  } else {
+    // If there is a file, see if there would be room to write to it.
+    if (files.empty())
+      force_new = true;
+    else {
+      if (files.front().size + size > props.limit)
+	force_new = true;
+    }
+  }
+
+  // At this point, force_new tells us if we are creating a new file,
+  // or opening the last one.
+  if (force_new) {
+    unsigned index = 0;
+    if (!files.empty())
+      index = files.front().pos + 1;
+    files.emplace_front(*this, index, true);
+  } else {
+    files.front().make_writable(*this);
+  }
+
+  dirty = true;
+  first_newfile = false;
+}
+
+void Pool::insert(ChunkPtr chunk) {
+  if (!writable)
+    throw std::logic_error("Attempt to insert into class opened as read-only");
+
+  prepare_write(chunk->write_size());
+
+  auto& file = files.front();
+
+  // It seems that fstream doesn't properly handle tellp() if the
+  // position isn't sought first.  It would be more efficient to not
+  // do this, and perhaps that could be done without the check below.
+  // The danger is losing track.
+  file.file.seekp(0, std::ios::end);
+  // std::cout << std::hex;
+  // std::cout << "--------------\n";
+  // std::cout << "Pre : " << file.size << std::endl;
+  // std::cout << "PPos: " << file.file.tellp() << std::endl;
+  chunk->write(file.file);
+  file.index.insert(FileIndex::value_type(chunk->get_oid(),
+					  FileIndex::Node(file.size, chunk->get_kind())));
+  file.size += chunk->write_size();
+  // std::cout << "Wsiz: " << chunk->write_size() << std::endl;
+  // std::cout << "Size: " << file.size << std::endl;
+  // std::cout << " Pos: " << file.file.tellp() << std::endl;
+  // std::cout << std::dec;
+  if (file.size != file.file.tellp()) {
+    throw std::runtime_error("File position mismatch on write");
+  }
+}
+
+void Pool::flush() {
+  if (dirty) {
+    auto& file = files.front();
+    file.unmake_writable(*this);
+    const auto name = construct_name(file.pos, ".idx");
+    files.front().index.save(name, file.size);
+    files.front().index.load(name, file.size);
+
+    dirty = false;
+  }
 }
 
 namespace {
@@ -203,13 +283,40 @@ std::string Pool::construct_name(unsigned pos, const std::string extension) cons
   return work.string();
 }
 
-Pool::File::File(const Pool& parent, unsigned pos)
+namespace {
+std::ios::openmode determine_mode(bool create) {
+  std::ios::openmode result = std::ios::binary | std::ios::in;
+  if (create)
+    result |= std::ios::out | std::ios::app;
+  return result;
+}
+}
+
+Pool::File::File(const Pool& parent, unsigned pos, bool create)
   : pos(pos),
     file(parent.construct_name(pos, ".data"),
-	 std::ios::binary | std::ios::in)
+	 determine_mode(create))
 {
+  // std::cout << "file: " << parent.construct_name(pos, ".data") << std::endl;
+  // std::cout << "mode: " << determine_mode(create) << std::endl;
+  if (!file.is_open())
+    throw std::runtime_error("Unable to open pool file");
   file.seekg(0, std::ios::end);
-  index.load(parent.construct_name(pos, ".idx"), file.tellg());
+  size = file.tellg();
+  if (!create)
+    index.load(parent.construct_name(pos, ".idx"), size);
+}
+
+void Pool::File::make_writable(const Pool& parent) {
+  file.close();
+  file.open(parent.construct_name(pos, ".data"),
+	    determine_mode(true));
+}
+
+void Pool::File::unmake_writable(const Pool& parent) {
+  file.close();
+  file.open(parent.construct_name(pos, ".data"),
+	    determine_mode(false));
 }
 
 } // namespace cdump

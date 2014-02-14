@@ -104,6 +104,7 @@ void Tmpdir::SetUp() {
     auto status = boost::filesystem::create_directory(work);
     if (status) {
       path = work;
+      // std::cout << "Tmpdir::SetUp: " << path << std::endl;
       return;
     }
   }
