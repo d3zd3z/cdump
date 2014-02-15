@@ -11,6 +11,7 @@ set(CMAKE_BUILD_TYPE Debug)
 # Compilation options.
 # First, warn a lot and consider them errors.
 add_definitions(-Wall -Wextra)
+add_definitions(-Wold-style-cast)
 add_definitions(-Werror)
 
 # Useful for getting color, even when piped.
