@@ -239,15 +239,15 @@ int decode_name(const std::string name) {
   }
   return -1;
 }
-}
 
-void Pool::scan_files() {
+// Get the set of all files in the given directory, returning the
+// list, sorted.
+std::vector<unsigned> find_pool_files(const bf::path base) {
   std::vector<unsigned> known;
 
   for (auto elt = bf::directory_iterator(base);
        elt != bf::directory_iterator();
-       ++elt)
-  {
+       ++elt) {
     const auto name = elt->path().filename().string();
     const auto pos = decode_name(name);
     if (pos >= 0)
@@ -256,8 +256,13 @@ void Pool::scan_files() {
 
   std::sort(known.begin(), known.end());
 
+  return known;
+}
+}
+
+void Pool::scan_files() {
   // Open each of the files.
-  for (auto elt : known) {
+  for (auto elt : find_pool_files(base)) {
     files.emplace_front(*this, elt);
   }
 
