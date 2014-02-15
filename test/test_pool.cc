@@ -44,8 +44,8 @@ void Pool::SetUp() {
 }
 
 void Pool::TearDown() {
-  std::cout << "Pool teardown at: " << path << std::endl;
-  // Tmpdir::TearDown();
+  // std::cout << "Pool teardown at: " << path << std::endl;
+  Tmpdir::TearDown();
 }
 
 void Pool::create(unsigned limit, bool newlib) {
