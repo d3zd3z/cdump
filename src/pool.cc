@@ -117,7 +117,7 @@ std::vector<OID> Pool::get_backups() const {
   return result;
 }
 
-Pool::Pool(const std::string path, bool writable)
+Pool::Pool(const std::string path, bool writable, bool recover)
   : base(path), writable(writable),
     lock(lock_path().c_str())
 {
@@ -126,7 +126,16 @@ Pool::Pool(const std::string path, bool writable)
   ppath /= "props.txt";
   read_props(ppath.string());
   first_newfile = props.newfile;
-  scan_files();
+  if (recover)
+    recover_files();
+  else
+    scan_files();
+}
+
+void Pool::recover_index(const std::string path) {
+  // Recovery constructs the pool, but doesn't give access to the
+  // recovered pool.
+  Pool (path, true, true);
 }
 
 std::string Pool::lock_path() {
@@ -270,6 +279,38 @@ void Pool::scan_files() {
   // std::copy(known.begin(), known.end(),
   //           std::ostream_iterator<unsigned>(std::cout, ", "));
   // std::cout << std::endl;
+}
+
+void Pool::recover_files() {
+  // TODO: Move recovery into File struct instead of expanding all of
+  // this here.
+
+  // Open each file, and recover the index if necessary.
+  for (auto elt : find_pool_files(base)) {
+    std::fstream file(construct_name(elt, ".data"), std::ios::in | std::ios::binary);
+    file.seekg(0, std::ios::end);
+    unsigned size = file.tellg();
+    FileIndex index;
+    try {
+      index.load(construct_name(elt, ".idx"), size);
+    } catch (index_error) {
+      std::cerr << "Recovering index " << construct_name(elt, ".idx") << std::endl;
+
+      unsigned pos = 0;
+      while (pos < size) {
+	Chunk::HeaderInfo hinfo;
+	file.seekg(pos);
+	if (!Chunk::read_header(file, hinfo))
+	  throw pool_open_error("Unable to read from pool file");
+
+	index.insert(FileIndex::value_type(hinfo.oid,
+					   FileIndex::Node{pos, hinfo.kind}));
+	pos += hinfo.stored_size;
+      }
+
+      index.save(construct_name(elt, ".idx"), size);
+    }
+  }
 }
 
 /**

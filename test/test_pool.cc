@@ -1,11 +1,16 @@
 // Pool testing.
 
 #include "pool.hh"
+#include "except.hh"
 #include "pdump.hh"
 #include "tutil.hh"
 #include "gtest/gtest.h"
 
 #include <boost/filesystem.hpp>
+
+#include <cstdlib>
+
+namespace bf = boost::filesystem;
 
 class Pool : public Tmpdir {
   // Use indirection, since this is driven by requests.
@@ -112,6 +117,50 @@ TEST_F(Pool, NewFile) {
 }
 
 // TODO: Index recovery.
+TEST_F(Pool, IndexRecovery) {
+  create();
+  open(true);
+  add(1, 100);
+  close();
+
+  // Stash away the old index.
+  bf::path idx = path;
+  idx /= "pool-data-0000.idx";
+  bf::path idx2 = path;
+  idx2 /= "pool-data-0000.idx.orig";
+
+  // This doesn't seem to be implemented.
+  // So, do it ourselves.
+  // bf::copy(idx, idx2);
+  std::string cmd = "cp ";
+  cmd += idx.string();
+  cmd += ' ';
+  cmd += idx2.string();
+  // std::cout << cmd << "\n";
+  auto res = system(cmd.c_str());
+  ASSERT_EQ(res, 0);
+
+  // Add some more nodes.
+  open(true);
+  add(100, 200);
+  close();
+
+  // And put the old index back.
+  bf::rename(idx2, idx);
+
+  // And open, which should throw.
+  try {
+    open();
+    FAIL();
+  } catch (cdump::index_error) {
+    // This is OK.
+  }
+
+  // Do index recovery?
+  cdump::Pool::recover_index(path);
+  open();
+  check();
+}
 
 #if 0
 TEST(Pool, Basic) {

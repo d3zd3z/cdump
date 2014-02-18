@@ -66,6 +66,7 @@ class Pool {
   std::forward_list<File> files;
 
   void scan_files();
+  void recover_files();
 
   // Indicates we've started writing.  When true, files.front().file
   // will be opened for writing, and write_pos will be set to the
@@ -80,6 +81,9 @@ class Pool {
 
   std::string construct_name(unsigned pos, const std::string extension) const;
 
+  // Private constructor.
+  Pool(const std::string path, bool writable, bool recover);
+
  public:
   /**
    * Attempt to open a pool with the given path.
@@ -88,7 +92,8 @@ class Pool {
    * @param path the pathname to the directory containing the pool.
    * @param writable indicates if this pool should be writable.
    */
-  Pool(const std::string path, bool writable = false);
+  Pool(const std::string path, bool writable = false)
+    : Pool(path, writable, false) {}
 
   ~Pool() {
     flush();
@@ -112,6 +117,12 @@ class Pool {
   static void create_pool(const std::string path,
 			  unsigned limit = default_limit,
 			  bool newlib = false);
+
+  /**
+   * Attempt to recover the index files for a given pool.  Must be
+   * able to write to the pool (the lock is held).
+   */
+  static void recover_index(const std::string path);
 
   bool is_writable() { return writable; }
 
