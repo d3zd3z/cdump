@@ -1,6 +1,7 @@
 // Index operations.
 
 #include "index.hh"
+#include "except.hh"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -156,7 +157,7 @@ void FileIndex::save(const std::string name, uint32_t size) {
   saver.save(tmp, size);
   const int result = std::rename(tmp.c_str(), name.c_str());
   if (result != 0) {
-    throw std::ios::failure("Unable to rename tmp file");
+    throw index_error("Unable to rename tmp file");
   }
 }
 
@@ -212,18 +213,18 @@ bool FileIndex::FileData::find(const FileIndex::key_type& key, FileIndex::value_
 void FileIndex::FileData::load(const std::string name, uint32_t size) {
   std::ifstream file(name, std::ios::binary|std::ios::in);
   if (!file.good()) {
-    throw std::ios::failure("Unable to read index file");
+    throw index_error("Unable to read index file");
   }
   file.exceptions(file.badbit|file.failbit|file.eofbit);
 
   Header head;
   file.read(reinterpret_cast<char*>(&head), sizeof(head));
   if (memcmp(head.magic, magic, magic_size) != 0)
-    throw std::ios::failure("Index header has invalid magic");
+    throw index_error("Index header has invalid magic");
   if (le32toh(head.version) != magic_version)
-    throw std::ios::failure("Index file incorrect version");
+    throw index_error("Index file incorrect version");
   if (le32toh(head.file_size) != size)
-    throw std::ios::failure("Index file incorrect size");
+    throw index_error("Index file incorrect size");
 
   // Reading the data in.  Vector doesn't give us write access to the
   // underlying data...  But, we can actually write to it anyway.

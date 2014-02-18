@@ -1,6 +1,7 @@
 // Storage pools.
 
 #include "pool.hh"
+#include "except.hh"
 
 #include <fstream>
 #include <iostream>
@@ -56,7 +57,7 @@ void Pool::create_pool(const std::string path,
   bf::path metadata(path);
   metadata /= "metadata";
   if (!bf::create_directory(metadata))
-    throw std::runtime_error("Unable to create metadata directory");
+    throw pool_open_error("Unable to create metadata directory");
 
   {
     bf::path props(metadata);
@@ -89,8 +90,8 @@ void Pool::read_props(std::string path) {
   // It seems that program_options fails anyway if the uuid isn't
   // specified, perhaps because it doesn't have a default constructor.
   if (props.uuid.is_nil())
-    throw new std::runtime_error("Backup property file \"" + path +
-				 "\" doesn't contain uuid");
+    throw new pool_open_error("Backup property file \"" + path +
+			      "\" doesn't contain uuid");
 
   // std::cout << bu::to_string(props.uuid) << std::endl;
   // std::cout << props.limit << std::endl;
@@ -305,7 +306,7 @@ Pool::File::File(const Pool& parent, unsigned pos, bool create)
   // std::cout << "file: " << parent.construct_name(pos, ".data") << std::endl;
   // std::cout << "mode: " << determine_mode(create) << std::endl;
   if (!file.is_open())
-    throw std::runtime_error("Unable to open pool file");
+    throw pool_open_error("Unable to open pool file");
   file.seekg(0, std::ios::end);
   size = file.tellg();
   if (!create)
