@@ -88,8 +88,8 @@ void Chunk::write(std::ostream& out) {
   Header head;
   memcpy(head.magic, magic, magic_size);
   head.uclen = htole32(size());
-  head.kind = kind;
-  head.oid = oid;
+  head.kind = kind_;
+  head.oid = oid_;
   const char* payload;
   uint32_t payload_len;
   if (has_zdata()) {

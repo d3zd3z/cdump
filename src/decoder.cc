@@ -90,9 +90,9 @@ void BackupWalk::operator()(BackupVisitor& visitor, const OID& root) {
   if (!ch)
     throw std::runtime_error("Chunk missing from pool");
 
-  auto pos = handlers.find(ch->get_kind());
+  auto pos = handlers.find(ch->kind());
   if (pos == handlers.end()) {
-    std::cerr << "Unsupported chunk kind: " << std::string(ch->get_kind()) << std::endl;
+    std::cerr << "Unsupported chunk kind: " << std::string(ch->kind()) << std::endl;
     throw std::runtime_error("Unsupported chunk kind");
   }
 

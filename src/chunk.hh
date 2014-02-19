@@ -39,20 +39,20 @@ typedef std::shared_ptr<Chunk> ChunkPtr;
 class Chunk {
  protected:
   // Simple fields.
-  Kind kind;
-  OID oid;
+  Kind kind_;
+  OID oid_;
 
  protected:
   // Construct based on some data.
   Chunk(const Kind kind, const char* data, unsigned data_len)
-      :kind(kind)
+      :kind_(kind)
   {
-    oid = OID(kind, data, data_len);
+    oid_ = OID(kind, data, data_len);
   }
 
   // Construct with already known OID.
   Chunk(const Kind kind, const OID oid)
-      :kind(kind), oid(oid) {}
+      :kind_(kind), oid_(oid) {}
  public:
 
   using data_type = std::vector<char>;
@@ -60,10 +60,10 @@ class Chunk {
   // TODO: don't use get_xxx() names for getters, just use the name.
 
   /// Get the object ID for this chunk.
-  OID& get_oid() { return oid; }
+  OID& oid() { return oid_; }
 
   /// Get the `Kind` for this chunk.
-  Kind get_kind() { return kind; }
+  Kind kind() { return kind_; }
 
   /// Get the uncompressed data of this chunk.
   virtual const char* data() = 0;

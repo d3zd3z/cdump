@@ -52,7 +52,7 @@ class ChunkTracker {
 
 void ChunkTracker::add(unsigned size, unsigned index) {
   auto ch = make_random_chunk(size, index);
-  Info& info = stored[ch->get_oid()];
+  Info& info = stored[ch->oid()];
   info.chunk = ch;
   info.offset = buf.tellp();
   ch->write(buf);
@@ -76,9 +76,9 @@ void ChunkTracker::check_offsets() {
     cdump::Chunk::HeaderInfo hinfo;
     auto res = cdump::Chunk::read_header(buf, hinfo);
     ASSERT_TRUE(res);
-    ASSERT_EQ(hinfo.kind, info.chunk->get_kind());
+    ASSERT_EQ(hinfo.kind, info.chunk->kind());
     // Compare OID.
-    ASSERT_EQ(hinfo.oid, info.chunk->get_oid());
+    ASSERT_EQ(hinfo.oid, info.chunk->oid());
     ASSERT_EQ(hinfo.size, info.chunk->size());
 
     pos += hinfo.stored_size;
@@ -91,7 +91,7 @@ void ChunkTracker::check_read() {
     buf.seekg(info.second.offset);
     auto ch = cdump::Chunk::read(buf);
     ASSERT_NE(ch, nullptr);
-    ASSERT_EQ(ch->get_kind(), info.second.chunk->get_kind());
+    ASSERT_EQ(ch->kind(), info.second.chunk->kind());
   }
 }
 

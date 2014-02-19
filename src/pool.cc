@@ -211,8 +211,8 @@ void Pool::insert(ChunkPtr chunk) {
   // std::cout << "Pre : " << file.size << std::endl;
   // std::cout << "PPos: " << file.file.tellp() << std::endl;
   chunk->write(file.file);
-  file.index.insert(FileIndex::value_type(chunk->get_oid(),
-					  FileIndex::Node(file.size, chunk->get_kind())));
+  file.index.insert(FileIndex::value_type(chunk->oid(),
+					  FileIndex::Node(file.size, chunk->kind())));
   file.size += chunk->write_size();
   // std::cout << "Wsiz: " << chunk->write_size() << std::endl;
   // std::cout << "Size: " << file.size << std::endl;

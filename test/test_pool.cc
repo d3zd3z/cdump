@@ -83,7 +83,7 @@ void Pool::add(unsigned index) {
 
 void Pool::check(unsigned index) {
   auto ch = make_random_chunk(32, index);
-  auto ch2 = pool->find(ch->get_oid());
+  auto ch2 = pool->find(ch->oid());
   ASSERT_TRUE(bool(ch2));
   ASSERT_EQ(ch->size(), ch2->size());
   ASSERT_EQ(memcmp(ch->data(), ch2->data(), ch->size()), 0);
