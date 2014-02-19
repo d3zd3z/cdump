@@ -51,7 +51,10 @@ class Chunk {
   // make sure copies are avoided.
   Chunk(const Chunk& other) = delete;
   Chunk& operator=(const Chunk& other) = delete;
+
  public:
+  virtual ~Chunk() {}
+
   // Used for polymorphic return.
   typedef std::unique_ptr<Chunk> ChunkPtr;
 
