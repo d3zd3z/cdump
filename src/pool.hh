@@ -141,7 +141,7 @@ class Pool {
   /**
    * Insert the given chunk into the storage pool.
    */
-  void insert(Chunk& chunk);
+  void insert(Chunk const& chunk);
   void flush();
 };
 

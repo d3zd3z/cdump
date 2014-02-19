@@ -194,7 +194,7 @@ void Pool::prepare_write(unsigned size) {
   first_newfile = false;
 }
 
-void Pool::insert(Chunk& chunk) {
+void Pool::insert(Chunk const& chunk) {
   if (!writable)
     throw std::logic_error("Attempt to insert into class opened as read-only");
 

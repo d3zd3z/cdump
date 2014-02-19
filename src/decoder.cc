@@ -133,7 +133,7 @@ void BackNode::add_property(std::string key, std::string value) {
 
 } // namespace
 
-void BackupWalk::walk_back(Chunk& chunk, BackupVisitor& visitor) {
+void BackupWalk::walk_back(Chunk const& chunk, BackupVisitor& visitor) {
   BackNode bn;
   decode_property(chunk.data(), chunk.size(), bn);
   visitor.backup(bn.oid, bn.date, bn.props);
