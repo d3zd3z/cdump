@@ -15,6 +15,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/regex.hpp>
+#include <boost/random/random_device.hpp>
 
 namespace bf = boost::filesystem;
 namespace bu = boost::uuids;
@@ -28,7 +29,7 @@ namespace cdump {
 namespace {
 
 std::string make_uuid() {
-  bu::random_generator gen;
+  bu::basic_random_generator<boost::random_device> gen;
   bu::uuid id = gen();
 
   return bu::to_string(id);

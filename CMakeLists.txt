@@ -23,7 +23,7 @@ add_definitions(-std=c++11)
 ######################################################################
 # Make sure we have boost.
 find_package(Boost 1.54 REQUIRED COMPONENTS system filesystem
-	program_options regex)
+	program_options random regex)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(src)
