@@ -63,13 +63,13 @@ class Chunk {
   // TODO: don't use get_xxx() names for getters, just use the name.
 
   /// Get the object ID for this chunk.
-  OID& oid() { return oid_; }
+  OID const& oid() const { return oid_; }
 
   /// Get the `Kind` for this chunk.
-  Kind kind() { return kind_; }
+  Kind kind() const { return kind_; }
 
   /// Get the uncompressed data of this chunk.
-  virtual const char* data() = 0;
+  virtual const char* data() const = 0;
 
   /**
    * Get the length of the uncompressed data.
@@ -77,12 +77,12 @@ class Chunk {
    * This is separate because a Chunk may know the length of the
    * uncompressed data without having to decompress it.
    */
-  virtual unsigned size() = 0;
+  virtual unsigned size() const = 0;
 
   /**
    * Determine if this chunk is compressible.
    */
-  virtual bool has_zdata() = 0;
+  virtual bool has_zdata() const = 0;
 
   /**
    * Attempt to get the compressed payload.
@@ -91,22 +91,22 @@ class Chunk {
    * data.  Otherwise, return a nullptr to indicate that the data is
    * not compressible.
    */
-  virtual const char* zdata() = 0;
+  virtual const char* zdata() const = 0;
 
   /// Get the size of the compressed data.
-  virtual unsigned zsize() = 0;
+  virtual unsigned zsize() const = 0;
 
   /**
    * Write this chunk out to the given ostream.
    *
    * The stream should be opened in binary mode.
    */
-  void write(std::ostream& out);
+  void write(std::ostream& out) const;
 
   /**
    * Determine how many bytes it will take to write this chunk out.
    */
-  unsigned write_size();
+  unsigned write_size() const;
 
   struct HeaderInfo {
     Kind kind;
@@ -156,11 +156,11 @@ class PlainChunk : public Chunk {
   PlainChunk(const Kind kind, const char* data, unsigned data_len);
   PlainChunk(const Kind kind, const OID& oid, std::istream& in, unsigned data_len);
 
-  virtual const char* data() override;
-  virtual unsigned size() override;
-  virtual bool has_zdata() override;
-  virtual const char* zdata() override;
-  virtual unsigned zsize() override;
+  virtual const char* data() const override;
+  virtual unsigned size() const override;
+  virtual bool has_zdata() const override;
+  virtual const char* zdata() const override;
+  virtual unsigned zsize() const override;
 };
 
 /**
@@ -175,11 +175,11 @@ class CompressedChunk : public Chunk {
  public:
   CompressedChunk(const Kind kind, const OID& oid, std::istream& in, unsigned data_len, unsigned zdata_len);
 
-  virtual const char* data() override;
-  virtual unsigned size() override;
-  virtual bool has_zdata() override;
-  virtual const char* zdata() override;
-  virtual unsigned zsize() override;
+  virtual const char* data() const override;
+  virtual unsigned size() const override;
+  virtual bool has_zdata() const override;
+  virtual const char* zdata() const override;
+  virtual unsigned zsize() const override;
 };
 
 } // namespace cdump

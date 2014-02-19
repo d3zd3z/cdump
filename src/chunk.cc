@@ -84,7 +84,7 @@ unsigned padded(unsigned size) {
 }
 } // namespace
 
-void Chunk::write(std::ostream& out) {
+void Chunk::write(std::ostream& out) const {
   Header head;
   memcpy(head.magic, magic, magic_size);
   head.uclen = htole32(size());
@@ -111,7 +111,7 @@ void Chunk::write(std::ostream& out) {
 }
 
 // TODO: Test this function.
-unsigned Chunk::write_size() {
+unsigned Chunk::write_size() const {
   if (has_zdata()) {
     return padded(sizeof(Header) + zsize());
   } else {
@@ -170,34 +170,38 @@ PlainChunk::PlainChunk(const Kind kind, const OID& oid, std::istream& in, unsign
 }
 
 const char*
-PlainChunk::data() {
+PlainChunk::data() const {
   return plain_data.data();
 }
 
 unsigned
-PlainChunk::size() {
+PlainChunk::size() const {
   return plain_data.size();
 }
 
 bool
-PlainChunk::has_zdata() {
+PlainChunk::has_zdata() const {
   switch (zdata_info) {
     case None:
       return false;
     case Some:
       return true;
     case Untried:
-      compressed_data.resize(plain_data.size());
+      // Although we are declared as const, modified the cached
+      // compressed value to avoid additional computation.
+      PlainChunk* wthis = const_cast<PlainChunk*>(this);
+
+      wthis->compressed_data.resize(plain_data.size());
       int res = try_compress(plain_data.data(), plain_data.size(),
-			     compressed_data.data());
+			     wthis->compressed_data.data());
       if (res < 0) {
-	zdata_info = None;
-	compressed_data.clear();
-	compressed_data.shrink_to_fit();
+	wthis->zdata_info = None;
+	wthis->compressed_data.clear();
+	wthis->compressed_data.shrink_to_fit();
 	return false;
       } else {
-	zdata_info = Some;
-	compressed_data.resize(res);
+	wthis->zdata_info = Some;
+	wthis->compressed_data.resize(res);
 	// Not sure if the shrink_to_fit is worth it.  It may copy the
 	// data again.
 	// compressed_data.shrink_to_fit();
@@ -208,14 +212,14 @@ PlainChunk::has_zdata() {
 }
 
 const char*
-PlainChunk::zdata() {
+PlainChunk::zdata() const {
   if (!has_zdata())
     throw std::runtime_error("Attempt to get zdata from incompressible chunk");
   return compressed_data.data();
 }
 
 unsigned
-PlainChunk::zsize() {
+PlainChunk::zsize() const {
   if (!has_zdata())
     throw std::runtime_error("Attempt to get zsize from incompressible chunk");
   return compressed_data.size();
@@ -233,33 +237,36 @@ CompressedChunk::CompressedChunk(const Kind kind, const OID& oid, std::istream& 
 }
 
 const char*
-CompressedChunk::data() {
+CompressedChunk::data() const {
   if (!is_decompressed) {
-    plain_data.resize(data_len);
+    // Although we are declared as const, modified the cached
+    // uncompressed value to avoid additional computation.
+    CompressedChunk* wthis = const_cast<CompressedChunk*>(this);
+    wthis->plain_data.resize(data_len);
     decompress(compressed_data.data(), compressed_data.size(),
-	       plain_data.data(), plain_data.size());
-    is_decompressed = true;
+	       wthis->plain_data.data(), wthis->plain_data.size());
+    wthis->is_decompressed = true;
   }
   return plain_data.data();
 }
 
 unsigned
-CompressedChunk::size() {
+CompressedChunk::size() const {
   return data_len;
 }
 
 bool
-CompressedChunk::has_zdata() {
+CompressedChunk::has_zdata() const {
   return true;
 }
 
 const char*
-CompressedChunk::zdata() {
+CompressedChunk::zdata() const {
   return compressed_data.data();
 }
 
 unsigned
-CompressedChunk::zsize() {
+CompressedChunk::zsize() const {
   return compressed_data.size();
 }
 
