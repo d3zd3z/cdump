@@ -77,7 +77,7 @@ void Pool::add(unsigned index) {
   ASSERT_TRUE(bool(pool));
   ASSERT_EQ(known.count(index), 0u);
   auto ch = make_random_chunk(32, index);
-  pool->insert(ch);
+  pool->insert(*ch);
   known.insert(index);
 }
 

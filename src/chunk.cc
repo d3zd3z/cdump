@@ -137,7 +137,7 @@ bool Chunk::read_header(std::istream& in, HeaderInfo& info) {
   return true;
 }
 
-ChunkPtr Chunk::read(std::istream& in) {
+Chunk::ChunkPtr Chunk::read(std::istream& in) {
   Header head;
   in.read(reinterpret_cast<char*>(&head), sizeof(head));
   if (memcmp(head.magic, magic, magic_size) != 0)
@@ -146,10 +146,10 @@ ChunkPtr Chunk::read(std::istream& in) {
   int uclen = le32toh(head.uclen);
 
   if (uclen == -1) {
-    return std::make_shared<PlainChunk>(head.kind, head.oid, in, clen);
+    return ChunkPtr(new PlainChunk(head.kind, head.oid, in, clen));
   } else
-    return std::make_shared<CompressedChunk>(head.kind, head.oid, in,
-					     uclen, clen);
+    return ChunkPtr(new CompressedChunk(head.kind, head.oid, in,
+					uclen, clen));
 }
 
 // Construct from given data.

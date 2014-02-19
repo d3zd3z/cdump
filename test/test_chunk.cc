@@ -38,7 +38,7 @@ TEST(Chunk, Compression) {
 namespace {
 class ChunkTracker {
   struct Info {
-    cdump::ChunkPtr chunk;
+    cdump::Chunk::ChunkPtr chunk;
     unsigned offset;
   };
 
@@ -53,33 +53,33 @@ class ChunkTracker {
 void ChunkTracker::add(unsigned size, unsigned index) {
   auto ch = make_random_chunk(size, index);
   Info& info = stored[ch->oid()];
-  info.chunk = ch;
+  info.chunk = std::move(ch);
   info.offset = buf.tellp();
-  ch->write(buf);
+  info.chunk->write(buf);
 }
 
 void ChunkTracker::check_offsets() {
   // Collect all of the chunks, and order them by size.
   // TODO: Figure out how to store references in this vector.
-  std::vector<Info> byoffset;
+  std::vector<Info const*> byoffset;
 
   std::transform(stored.begin(), stored.end(), std::back_inserter(byoffset),
-		 [](const std::pair<cdump::OID, Info>&elt) { return elt.second; });
+		 [](std::pair<const cdump::OID, Info>& elt) { return &elt.second; });
 
   std::sort(byoffset.begin(), byoffset.end(),
-	    [](const Info& a, const Info& b) { return a.offset < b.offset; });
+	    [](const Info* a, const Info* b) { return a->offset < b->offset; });
 
   unsigned pos = 0;
-  for (auto& info : byoffset) {
-    ASSERT_EQ(pos, info.offset);
+  for (auto info : byoffset) {
+    ASSERT_EQ(pos, info->offset);
     buf.seekg(pos);
     cdump::Chunk::HeaderInfo hinfo;
     auto res = cdump::Chunk::read_header(buf, hinfo);
     ASSERT_TRUE(res);
-    ASSERT_EQ(hinfo.kind, info.chunk->kind());
+    ASSERT_EQ(hinfo.kind, info->chunk->kind());
     // Compare OID.
-    ASSERT_EQ(hinfo.oid, info.chunk->oid());
-    ASSERT_EQ(hinfo.size, info.chunk->size());
+    ASSERT_EQ(hinfo.oid, info->chunk->oid());
+    ASSERT_EQ(hinfo.size, info->chunk->size());
 
     pos += hinfo.stored_size;
   }

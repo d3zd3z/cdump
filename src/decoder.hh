@@ -72,11 +72,11 @@ class BackupWalk {
   void operator()(BackupVisitor& visitor, const OID& root);
 
  private:
-  typedef void (BackupWalk::* handler)(ChunkPtr chunk, BackupVisitor& visitor);
+  typedef void (BackupWalk::* handler)(Chunk& chunk, BackupVisitor& visitor);
   static const std::map<Kind, handler> handlers;
 
   // Handlers for the various types.
-  void walk_back(ChunkPtr chunk, BackupVisitor& visitor);
+  void walk_back(Chunk& chunk, BackupVisitor& visitor);
 };
 
 } // namespace cdump

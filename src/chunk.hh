@@ -13,13 +13,6 @@ namespace cdump {
 
 class Chunk;
 
-// A shared chunk pointer, convenient alias, since they can easily be
-// used this way.
-// TODO: Use a unique ptr for this.  Most use cases prefer the lower
-// overhead, and in any case, they can be converted to shared_ptr if
-// necessary.
-typedef std::shared_ptr<Chunk> ChunkPtr;
-
 /**
  * Backup chunk
  *
@@ -53,7 +46,14 @@ class Chunk {
   // Construct with already known OID.
   Chunk(const Kind kind, const OID oid)
       :kind_(kind), oid_(oid) {}
+
+  // No copying allowed.  It isn't particularly hard, but we want to
+  // make sure copies are avoided.
+  Chunk(const Chunk& other) = delete;
+  Chunk& operator=(const Chunk& other) = delete;
  public:
+  // Used for polymorphic return.
+  typedef std::unique_ptr<Chunk> ChunkPtr;
 
   using data_type = std::vector<char>;
 

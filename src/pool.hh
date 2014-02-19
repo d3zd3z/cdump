@@ -136,12 +136,12 @@ class Pool {
    * Attempt to read a chunk from the pool.  Throws a ___ exception if
    * the chunk couldn't be found.
    */
-  ChunkPtr find(const OID& key);
+  Chunk::ChunkPtr find(const OID& key);
 
   /**
    * Insert the given chunk into the storage pool.
    */
-  void insert(ChunkPtr chunk);
+  void insert(Chunk& chunk);
   void flush();
 };
 

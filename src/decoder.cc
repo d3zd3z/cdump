@@ -98,7 +98,7 @@ void BackupWalk::operator()(BackupVisitor& visitor, const OID& root) {
 
   visitor.push_oid(root);
   try {
-    (this->*pos->second)(ch, visitor);
+    (this->*pos->second)(*ch, visitor);
   } catch (BackupVisitor::Prune) {
     // Allow.
   }
@@ -133,9 +133,9 @@ void BackNode::add_property(std::string key, std::string value) {
 
 } // namespace
 
-void BackupWalk::walk_back(ChunkPtr chunk, BackupVisitor& visitor) {
+void BackupWalk::walk_back(Chunk& chunk, BackupVisitor& visitor) {
   BackNode bn;
-  decode_property(chunk->data(), chunk->size(), bn);
+  decode_property(chunk.data(), chunk.size(), bn);
   visitor.backup(bn.oid, bn.date, bn.props);
 
   // If Prune was not thrown, walk down to the child.

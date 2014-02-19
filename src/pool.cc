@@ -144,7 +144,7 @@ std::string Pool::lock_path() {
   return work.string();
 }
 
-ChunkPtr Pool::find(const OID& key) {
+Chunk::ChunkPtr Pool::find(const OID& key) {
   for (auto& f : files) {
     const auto res = f.index.find(key);
     if (res != f.index.end()) {
@@ -153,7 +153,7 @@ ChunkPtr Pool::find(const OID& key) {
     }
   }
 
-  return ChunkPtr();
+  return Chunk::ChunkPtr();
 }
 
 void Pool::prepare_write(unsigned size) {
@@ -193,11 +193,11 @@ void Pool::prepare_write(unsigned size) {
   first_newfile = false;
 }
 
-void Pool::insert(ChunkPtr chunk) {
+void Pool::insert(Chunk& chunk) {
   if (!writable)
     throw std::logic_error("Attempt to insert into class opened as read-only");
 
-  prepare_write(chunk->write_size());
+  prepare_write(chunk.write_size());
 
   auto& file = files.front();
 
@@ -210,10 +210,10 @@ void Pool::insert(ChunkPtr chunk) {
   // std::cout << "--------------\n";
   // std::cout << "Pre : " << file.size << std::endl;
   // std::cout << "PPos: " << file.file.tellp() << std::endl;
-  chunk->write(file.file);
-  file.index.insert(FileIndex::value_type(chunk->oid(),
-					  FileIndex::Node(file.size, chunk->kind())));
-  file.size += chunk->write_size();
+  chunk.write(file.file);
+  file.index.insert(FileIndex::value_type(chunk.oid(),
+					  FileIndex::Node(file.size, chunk.kind())));
+  file.size += chunk.write_size();
   // std::cout << "Wsiz: " << chunk->write_size() << std::endl;
   // std::cout << "Size: " << file.size << std::endl;
   // std::cout << " Pos: " << file.file.tellp() << std::endl;

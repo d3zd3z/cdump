@@ -84,10 +84,10 @@ std::vector<unsigned> build_sizes() {
   return vec;
 }
 
-cdump::ChunkPtr make_random_chunk(unsigned size, unsigned index) {
+cdump::Chunk::ChunkPtr make_random_chunk(unsigned size, unsigned index) {
   // TODO: How to do this without a copy of the vector.
   auto buf = make_random_string(size, index);
-  return cdump::ChunkPtr(new cdump::PlainChunk("blob", buf.data(), buf.size()));
+  return cdump::Chunk::ChunkPtr(new cdump::PlainChunk("blob", buf.data(), buf.size()));
 }
 
 //////////////////////////////////////////////////////////////////////
