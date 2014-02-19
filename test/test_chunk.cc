@@ -90,7 +90,7 @@ void ChunkTracker::check_read() {
   for (auto& info : stored) {
     buf.seekg(info.second.offset);
     auto ch = cdump::Chunk::read(buf);
-    ASSERT_NE(ch, nullptr);
+    ASSERT_TRUE(bool(ch));
     ASSERT_EQ(ch->kind(), info.second.chunk->kind());
   }
 }
