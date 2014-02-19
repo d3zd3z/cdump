@@ -41,18 +41,27 @@ include_directories(${ZLIB_DINCLUDE_DIRS})
 ######################################################################
 # Most of the code.
 file(GLOB DumpSrc src/**.cc)
-add_library(cdump ${DumpSrc})
+add_library(dump ${DumpSrc})
 
 # Test driver.
 file(GLOB TestSrc test/*.cc)
 add_executable(maintest ${TestSrc})
-target_link_libraries(maintest gtest ${Boost_LIBRARIES})
-target_link_libraries(maintest cdump)
+target_link_libraries(maintest gtest)
+target_link_libraries(maintest ${Boost_LIBRARIES})
+target_link_libraries(maintest dump)
 target_link_libraries(maintest ${OPENSSL_LIBRARIES})
 target_link_libraries(maintest ${ZLIB_LIBRARIES})
 
 add_subdirectory(gtest-1.7.0)
 target_include_directories(maintest PRIVATE gtest-1.7.0/include)
+
+# Main executable.
+file(GLOB MainSrc main/*.cc)
+add_executable(cdump ${MainSrc})
+target_link_libraries(cdump ${Boost_LIBRARIES})
+target_link_libraries(cdump dump)
+target_link_libraries(cdump ${OPENSSL_LIBRARIES})
+target_link_libraries(cdump ${ZLIB_LIBRARIES})
 
 # Building documentation
 option(BUILD_DOCUMENTATION "Build documentation")
