@@ -106,3 +106,17 @@ TEST(Chunk, IO) {
   ct.check_offsets();
   ct.check_read();
 }
+
+// Verify that the move constructors work.
+TEST(Chunk, CopyMove) {
+  cdump::PlainChunk ch1("blob", "hello", 5);
+
+  auto ch2 = std::move(ch1);
+  ASSERT_EQ(memcmp(ch2.data(), "hello", 4), 0);
+
+  // Not really guaranteed, but conventional.
+  ASSERT_EQ(ch1.size(), 0u);
+
+  // This should be a compilation failure.
+  // auto ch3 = ch2;
+}

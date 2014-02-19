@@ -55,6 +55,10 @@ class Chunk {
  public:
   virtual ~Chunk() {}
 
+  // Chunks can be moved, not copied.
+  Chunk(Chunk&& other) = default;
+  Chunk& operator=(Chunk&& other) = default;
+
   // Used for polymorphic return.
   typedef std::unique_ptr<Chunk> ChunkPtr;
 
